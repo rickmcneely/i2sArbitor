@@ -1,0 +1,17 @@
+# i2sArbitor Configuration
+# Controls which I2S audio service is active at any given time
+
+api_port: 8090
+poll_interval_ms: 2000
+default_service: ""  # Leave empty for no default, or set to service name
+
+services:
+  - name: usboveri2s
+    display_name: "USB Over I2S Player"
+    base_url: "http://localhost:8091"
+    priority: 1
+
+  - name: usbaudio
+    display_name: "USB Audio Bridge"
+    base_url: "http://localhost:8092"
+    priority: 2

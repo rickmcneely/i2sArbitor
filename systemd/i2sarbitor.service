@@ -1,0 +1,21 @@
+[Unit]
+Description=I2S Arbitor - Audio Service Controller
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/i2sarbitor
+Restart=always
+RestartSec=5
+User=root
+
+# Environment
+Environment=HOME=/root
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

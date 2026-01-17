@@ -1,0 +1,19 @@
+# Binaries
+/i2sarbitor
+*.exe
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/
+
+# Claude
+.claude/
