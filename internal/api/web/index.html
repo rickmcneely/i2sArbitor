@@ -755,6 +755,8 @@
 
         function renderServices(services, activeService) {
             const grid = document.getElementById('services-grid');
+            // Sort by priority to ensure consistent ordering
+            services.sort((a, b) => a.priority - b.priority);
             grid.innerHTML = services.map(svc => {
                 const isActive = svc.name === activeService && svc.active;
                 const cardClass = 'service-card' + (isActive ? ' active' : '') + (!svc.online ? ' offline' : '');
