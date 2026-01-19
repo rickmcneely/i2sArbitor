@@ -341,23 +341,23 @@
             background: var(--accent-hover);
         }
 
-        .btn-lock {
+        .btn-disable {
             background: var(--bg-card);
             color: var(--text-primary);
         }
 
-        .btn-lock:hover {
-            background: var(--accent-yellow);
+        .btn-disable:hover {
+            background: var(--accent-red);
+            color: var(--text-primary);
+        }
+
+        .btn-enable {
+            background: var(--accent-green);
             color: var(--bg-primary);
         }
 
-        .btn-unlock {
-            background: var(--accent-yellow);
-            color: var(--bg-primary);
-        }
-
-        .btn-unlock:hover {
-            background: #ffe566;
+        .btn-enable:hover {
+            background: #6ee7b7;
         }
 
         .btn:disabled {
@@ -792,13 +792,13 @@
                             '<i class="fas fa-play"></i> Activate' +
                         '</button>' +
                         (svc.locked ?
-                            '<button class="btn btn-unlock" onclick="unlockService(\'' + svc.name + '\')" ' +
+                            '<button class="btn btn-enable" onclick="enableService(\'' + svc.name + '\')" ' +
                                 (!svc.online ? 'disabled' : '') + '>' +
-                                '<i class="fas fa-unlock"></i> Unlock' +
+                                '<i class="fas fa-check"></i> Enable' +
                             '</button>' :
-                            '<button class="btn btn-lock" onclick="lockService(\'' + svc.name + '\')" ' +
+                            '<button class="btn btn-disable" onclick="disableService(\'' + svc.name + '\')" ' +
                                 (!svc.online ? 'disabled' : '') + '>' +
-                                '<i class="fas fa-lock"></i> Lock' +
+                                '<i class="fas fa-ban"></i> Disable' +
                             '</button>'
                         ) +
                     '</div>' +
@@ -862,7 +862,7 @@
                                     svc.online ? 'success' : 'error');
                             }
                             if (prev.locked !== svc.locked) {
-                                addLog(svc.display_name + ' ' + (svc.locked ? 'locked' : 'unlocked'), 'info');
+                                addLog(svc.display_name + ' ' + (svc.locked ? 'disabled' : 'enabled'), 'info');
                             }
                         }
                     });
@@ -899,7 +899,7 @@
             }
         }
 
-        async function lockService(name) {
+        async function disableService(name) {
             try {
                 const response = await fetch(API_BASE + '/services/' + name + '/lock', {
                     method: 'POST'
@@ -907,18 +907,18 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to lock service');
+                    throw new Error(data.error || 'Failed to disable service');
                 }
 
-                showToast('Service locked: ' + name, 'success');
+                showToast('Service disabled: ' + name, 'success');
                 loadStatus();
             } catch (err) {
                 showToast(err.message, 'error');
-                addLog('Failed to lock ' + name + ': ' + err.message, 'error');
+                addLog('Failed to disable ' + name + ': ' + err.message, 'error');
             }
         }
 
-        async function unlockService(name) {
+        async function enableService(name) {
             try {
                 const response = await fetch(API_BASE + '/services/' + name + '/lock', {
                     method: 'DELETE'
@@ -926,14 +926,14 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to unlock service');
+                    throw new Error(data.error || 'Failed to enable service');
                 }
 
-                showToast('Service unlocked: ' + name, 'success');
+                showToast('Service enabled: ' + name, 'success');
                 loadStatus();
             } catch (err) {
                 showToast(err.message, 'error');
-                addLog('Failed to unlock ' + name + ': ' + err.message, 'error');
+                addLog('Failed to enable ' + name + ': ' + err.message, 'error');
             }
         }
 
