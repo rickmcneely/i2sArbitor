@@ -274,11 +274,6 @@
             color: var(--error);
         }
 
-        .status-badge.enabled {
-            background: rgba(78, 204, 163, 0.2);
-            color: var(--success);
-        }
-
         .status-badge.active {
             background: rgba(78, 204, 163, 0.3);
             color: var(--success);
@@ -332,32 +327,26 @@
             transition: all 0.2s;
         }
 
-        .btn-activate {
-            background: var(--accent);
-            color: white;
-        }
-
-        .btn-activate:hover {
-            background: var(--accent-hover);
-        }
-
-        .btn-disable {
+        .btn-disabled-state {
             background: var(--bg-card);
-            color: var(--text-primary);
+            color: var(--text-secondary);
+            width: 100%;
         }
 
-        .btn-disable:hover {
-            background: var(--accent-red);
-            color: var(--text-primary);
-        }
-
-        .btn-enable {
+        .btn-disabled-state:hover {
             background: var(--accent-green);
             color: var(--bg-primary);
         }
 
-        .btn-enable:hover {
-            background: #6ee7b7;
+        .btn-enabled-state {
+            background: var(--accent-green);
+            color: var(--bg-primary);
+            width: 100%;
+            cursor: default;
+        }
+
+        .btn-enabled-state:disabled {
+            opacity: 1;
         }
 
         .btn:disabled {
@@ -772,7 +761,6 @@
                             '<span class="status-badge ' + (svc.online ? 'online' : 'offline') + '">' +
                                 (svc.online ? 'Online' : 'Offline') +
                             '</span>' +
-                            (!svc.locked ? '<span class="status-badge enabled">Enabled</span>' : '') +
                             (svc.active ? '<span class="status-badge active">Active</span>' : '') +
                         '</div>' +
                     '</div>' +
@@ -787,18 +775,13 @@
                         '</div>' +
                     '</div>' +
                     '<div class="service-actions">' +
-                        '<button class="btn btn-activate" onclick="activateService(\'' + svc.name + '\')" ' +
-                            ((!svc.online || isActive) ? 'disabled' : '') + '>' +
-                            '<i class="fas fa-play"></i> Activate' +
-                        '</button>' +
                         (svc.locked ?
-                            '<button class="btn btn-enable" onclick="enableService(\'' + svc.name + '\')" ' +
+                            '<button class="btn btn-disabled-state" onclick="enableService(\'' + svc.name + '\')" ' +
                                 (!svc.online ? 'disabled' : '') + '>' +
-                                '<i class="fas fa-check"></i> Enable' +
+                                '<i class="fas fa-ban"></i> Disabled' +
                             '</button>' :
-                            '<button class="btn btn-disable" onclick="disableService(\'' + svc.name + '\')" ' +
-                                (!svc.online ? 'disabled' : '') + '>' +
-                                '<i class="fas fa-ban"></i> Disable' +
+                            '<button class="btn btn-enabled-state" disabled>' +
+                                '<i class="fas fa-check"></i> Enabled' +
                             '</button>'
                         ) +
                     '</div>' +
@@ -877,44 +860,6 @@
             } catch (err) {
                 updateHealth(false);
                 console.error('Error loading status:', err);
-            }
-        }
-
-        async function activateService(name) {
-            try {
-                const response = await fetch(API_BASE + '/services/' + name + '/activate', {
-                    method: 'POST'
-                });
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to activate service');
-                }
-
-                showToast('Service activated: ' + name, 'success');
-                loadStatus();
-            } catch (err) {
-                showToast(err.message, 'error');
-                addLog('Failed to activate ' + name + ': ' + err.message, 'error');
-            }
-        }
-
-        async function disableService(name) {
-            try {
-                const response = await fetch(API_BASE + '/services/' + name + '/lock', {
-                    method: 'POST'
-                });
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to disable service');
-                }
-
-                showToast('Service disabled: ' + name, 'success');
-                loadStatus();
-            } catch (err) {
-                showToast(err.message, 'error');
-                addLog('Failed to disable ' + name + ': ' + err.message, 'error');
             }
         }
 
