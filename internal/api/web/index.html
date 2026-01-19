@@ -274,9 +274,9 @@
             color: var(--error);
         }
 
-        .status-badge.locked {
-            background: rgba(255, 217, 61, 0.2);
-            color: var(--warning);
+        .status-badge.enabled {
+            background: rgba(78, 204, 163, 0.2);
+            color: var(--success);
         }
 
         .status-badge.active {
@@ -772,7 +772,7 @@
                             '<span class="status-badge ' + (svc.online ? 'online' : 'offline') + '">' +
                                 (svc.online ? 'Online' : 'Offline') +
                             '</span>' +
-                            (svc.locked ? '<span class="status-badge locked">Locked</span>' : '') +
+                            (!svc.locked ? '<span class="status-badge enabled">Enabled</span>' : '') +
                             (svc.active ? '<span class="status-badge active">Active</span>' : '') +
                         '</div>' +
                     '</div>' +
