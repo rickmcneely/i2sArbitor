@@ -47,7 +47,7 @@ func New(cfg *config.Config) *Arbiter {
 		},
 	}
 
-	// Initialize service status entries
+	// Initialize service status entries - all start locked, enforcement will unlock one
 	for _, svc := range cfg.Services {
 		a.services[svc.Name] = &ServiceStatus{
 			Name:        svc.Name,
@@ -55,7 +55,7 @@ func New(cfg *config.Config) *Arbiter {
 			BaseURL:     svc.BaseURL,
 			Priority:    svc.Priority,
 			Online:      false,
-			Locked:      false,
+			Locked:      true,
 			Active:      false,
 		}
 	}
@@ -300,39 +300,66 @@ func (a *Arbiter) pollAllServices() {
 	a.enforceSingleUnlocked()
 }
 
-// enforceSingleUnlocked ensures only one service is unlocked at a time
+// enforceSingleUnlocked ensures exactly one service is unlocked at all times
 // Must be called with mutex held
 func (a *Arbiter) enforceSingleUnlocked() {
+	var onlineServices []string
 	var unlockedServices []string
+	var lockedServices []string
+
 	for name, svc := range a.services {
-		if svc.Online && !svc.Locked {
-			unlockedServices = append(unlockedServices, name)
+		if svc.Online {
+			onlineServices = append(onlineServices, name)
+			if svc.Locked {
+				lockedServices = append(lockedServices, name)
+			} else {
+				unlockedServices = append(unlockedServices, name)
+			}
 		}
 	}
 
-	// If more than one service is unlocked, lock all but the active one (or first by priority)
-	if len(unlockedServices) > 1 {
-		log.Warn().Int("count", len(unlockedServices)).Msg("multiple services unlocked, enforcing constraint")
+	// No online services - nothing to enforce
+	if len(onlineServices) == 0 {
+		return
+	}
 
-		// Determine which one to keep unlocked (prefer active, then lowest priority number)
-		keepUnlocked := unlockedServices[0]
+	// Determine which service should be unlocked (prefer active, then lowest priority number)
+	findServiceToUnlock := func() string {
+		// If there's an active service that's online, prefer it
 		if a.activeService != "" {
-			for _, name := range unlockedServices {
+			for _, name := range onlineServices {
 				if name == a.activeService {
-					keepUnlocked = name
-					break
-				}
-			}
-		} else {
-			// Find lowest priority (highest precedence)
-			lowestPriority := a.services[keepUnlocked].Priority
-			for _, name := range unlockedServices {
-				if a.services[name].Priority < lowestPriority {
-					lowestPriority = a.services[name].Priority
-					keepUnlocked = name
+					return name
 				}
 			}
 		}
+		// Otherwise, find the service with lowest priority number (highest precedence)
+		best := onlineServices[0]
+		bestPriority := a.services[best].Priority
+		for _, name := range onlineServices {
+			if a.services[name].Priority < bestPriority {
+				bestPriority = a.services[name].Priority
+				best = name
+			}
+		}
+		return best
+	}
+
+	// Case 1: No services unlocked - unlock one
+	if len(unlockedServices) == 0 {
+		toUnlock := findServiceToUnlock()
+		log.Info().Str("service", toUnlock).Msg("no services unlocked, unlocking one")
+		if err := a.lockServiceInternal(toUnlock, false); err != nil {
+			log.Error().Err(err).Str("service", toUnlock).Msg("failed to unlock service")
+		}
+		return
+	}
+
+	// Case 2: More than one service unlocked - lock extras
+	if len(unlockedServices) > 1 {
+		log.Warn().Int("count", len(unlockedServices)).Msg("multiple services unlocked, enforcing constraint")
+
+		keepUnlocked := findServiceToUnlock()
 
 		// Lock all others
 		for _, name := range unlockedServices {
@@ -343,11 +370,21 @@ func (a *Arbiter) enforceSingleUnlocked() {
 				}
 			}
 		}
+
+		// Make sure the one we want unlocked is actually unlocked
+		if a.services[keepUnlocked].Locked {
+			if err := a.lockServiceInternal(keepUnlocked, false); err != nil {
+				log.Error().Err(err).Str("service", keepUnlocked).Msg("failed to unlock service")
+			}
+		}
 	}
+
+	// Case 3: Exactly one service unlocked - this is correct, nothing to do
 }
 
 // pollServiceInternal checks a single service status
 // Must be called with mutex held
+// NOTE: Lock status is managed by the arbiter, not read from services
 func (a *Arbiter) pollServiceInternal(name string) {
 	svc := a.services[name]
 	svc.LastCheck = time.Now().Format(time.RFC3339)
@@ -400,10 +437,8 @@ func (a *Arbiter) pollServiceInternal(name string) {
 		status = data
 	}
 
-	// Check locked status
-	if locked, ok := status["locked"].(bool); ok {
-		svc.Locked = locked
-	}
+	// NOTE: We do NOT read lock status from services - arbiter is the source of truth
+	// The arbiter maintains lock state and enforces it
 
 	// Check if service is actively doing something
 	// For usbOverI2S: check player state
