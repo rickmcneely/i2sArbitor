@@ -31,7 +31,7 @@ func Default() *Config {
 		Services: []Service{
 			{
 				Name:        "usboveri2s",
-				DisplayName: "USB Over I2S Player",
+				DisplayName: "USB Media Player",
 				BaseURL:     "http://localhost:8090",
 				Priority:    1,
 			},

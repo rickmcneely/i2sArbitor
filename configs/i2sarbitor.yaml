@@ -7,7 +7,7 @@ default_service: ""  # Leave empty for no default, or set to service name
 
 services:
   - name: usboveri2s
-    display_name: "USB Over I2S Player"
+    display_name: "USB Media Player"
     base_url: "http://localhost:8091"
     priority: 1
 
